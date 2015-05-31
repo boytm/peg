@@ -190,7 +190,7 @@ static void Node_compile_c_ko(Node *node, int ko)
       fprintf(output, "  yyText(yy, yy->__begin, yy->__end);  {\n");
       fprintf(output, "#define yytext yy->__text\n");
       fprintf(output, "#define yyleng yy->__textlen\n");
-      fprintf(output, "if (!(%s)) goto l%d;\n", node->action.text, ko);
+      fprintf(output, "if (!(%s)) goto l%d;\n", node->predicate.text, ko);
       fprintf(output, "#undef yytext\n");
       fprintf(output, "#undef yyleng\n");
       fprintf(output, "  }");
@@ -618,6 +618,7 @@ YY_LOCAL(void) yyDone(yycontext *yy)\n\
       yythunk *thunk= &yy->__thunks[pos];\n\
       int yyleng= thunk->end ? yyText(yy, thunk->begin, thunk->end) : thunk->begin;\n\
       yyprintf((stderr, \"DO [%d] %p %s\\n\", pos, thunk->action, yy->__text));\n\
+      yyLineGet(yy, thunk->begin, lineNumber);\n\
       thunk->action(yy, yy->__text, yyleng);\n\
     }\n\
   yy->__thunkpos= 0;\n\
@@ -807,6 +808,7 @@ void Rule_compile_c(Node *node)
       defineVariables(n->action.rule->rule.variables);
       fprintf(output, "  yyprintf((stderr, \"do yy%s\\n\"));\n", n->action.name);
       fprintf(output, "  {\n");
+      fprintf(output, "#line %d \"%s\"\n", n->action.linenum, fileName);
       fprintf(output, "  %s;\n", n->action.text);
       fprintf(output, "  }\n");
       undefineVariables(n->action.rule->rule.variables);

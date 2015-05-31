@@ -26,8 +26,8 @@
 
   int   verboseFlag= 0;
 
-  static int	 lineNumber= 0;
-  static char	*fileName= 0;
+  int	 lineNumber= 0;
+  char	*fileName= 0;
   static char	*trailer= 0;
   static Header	*headers= 0;
 
@@ -36,12 +36,35 @@
 
   void yyerror(char *message);
 
-# define YY_INPUT(buf, result, max)		\
-  {						\
-    int c= getc(input);				\
-    if ('\n' == c || '\r' == c) ++lineNumber;	\
-    result= (EOF == c) ? 0 : (*(buf)= c, 1);	\
-  }
+# define YY_CTX_MEMBERS \
+    int *line; int linepos; int linelen;
+
+#define yyLine(yy, pos) do \
+{ \
+  while (yy->linelen <= yy->linepos) \
+  { \
+    yy->linelen = yy->linelen ? yy->linelen * 2 : 1; \
+    yy->line= (int *)YY_REALLOC(yy, yy->line, sizeof(int) * yy->linelen); \
+  } \
+  yy->line[yy->linepos++] = pos; \
+} while(0)
+
+#define yyLineGet(yy, pos, linenumber) do\
+{ \
+  for(linenumber = 0; linenumber < yy->linepos && pos >= yy->line[linenumber]; ++linenumber) \
+  { \
+  } \
+  linenumber += 1; \
+} while(0)
+
+# define YY_INPUT(buf, result, max)             \
+{                                               \
+  int c= getc(input);                             \
+  if ('\n' == c || '\r' == c) { ++lineNumber; yyLine(yy, yy->__pos); } \
+  result= (EOF == c) ? 0 : (*(buf)= c, 1);        \
+}
+
+
 
 # define YY_LOCAL(T)	static T
 # define YY_RULE(T)	static T
@@ -257,6 +280,15 @@ YY_LOCAL(int) yyText(yycontext *yy, int begin, int end)
   return yyleng;
 }
 
+
+//int yyLineGet(yycontext *yy, int pos, int linenumber)
+//{ 
+//  for(linenumber = 0; linenumber < yy->linepos && pos >= yy->line[linenumber]; ++linenumber) 
+//  { 
+//  } 
+//  return linenumber += 1; 
+//}
+
 YY_LOCAL(void) yyDone(yycontext *yy)
 {
   int pos;
@@ -265,6 +297,7 @@ YY_LOCAL(void) yyDone(yycontext *yy)
       yythunk *thunk= &yy->__thunks[pos];
       int yyleng= thunk->end ? yyText(yy, thunk->begin, thunk->end) : thunk->begin;
       yyprintf((stderr, "DO [%d] %p %s\n", pos, thunk->action, yy->__text));
+      /*  lineNumber = */yyLineGet(yy, thunk->begin, lineNumber);
       thunk->action(yy, yy->__text, yyleng);
     }
   yy->__thunkpos= 0;

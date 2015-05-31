@@ -150,6 +150,7 @@ Node *makeAction(char *text)
   node->action.text= strdup(text);
   node->action.list= actions;
   node->action.rule= thisRule;
+  node->action.linenum= lineNumber;
   actions= node;
   {
     char *ptr;

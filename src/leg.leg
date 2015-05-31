@@ -49,15 +49,37 @@
 
   void yyerror(char *message);
 
+#define yyLine(yy, pos) do \
+{ \
+  while (yy->linelen <= yy->linepos) \
+    { \
+      yy->linelen = yy->linelen ? yy->linelen * 2 : 1; \
+      yy->line= (int *)YY_REALLOC(yy, yy->line, sizeof(int) * yy->linelen); \
+    } \
+  yy->line[yy->linepos++] = pos; \
+} while(0)
+
+#define yyLineGet(yy, pos, linenumber) do\
+{ \
+    for(linenumber = 0; linenumber < yy->linepos; ++linenumber) \
+    { \
+        if (pos > yy->line[linenumber]) \
+            break; \
+    } \
+    linenumber += 1; \
+} while(0)
+
 # define YY_INPUT(buf, result, max)		\
   {						\
     int c= getc(input);				\
-    if ('\n' == c || '\r' == c) ++lineNumber;	\
+    if ('\n' == c || '\r' == c) { ++lineNumber;	yyLine(yy, yy->__pos);} \
     result= (EOF == c) ? 0 : (*(buf)= c, 1);	\
   }
 
 # define YY_LOCAL(T)	static T
 # define YY_RULE(T)	static T
+# define YY_CTX_MEMBERS \
+    int *line; int linepos; int linelen;
 %}
 
 # Hierarchical syntax
