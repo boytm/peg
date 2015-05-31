@@ -140,7 +140,7 @@ Node *makeClass(char *text)
   return node;
 }
 
-Node *makeAction(char *text)
+Node *makeAction(char *text, Position *linenum)
 {
   Node *node= newNode(Action);
   char name[1024];
@@ -150,6 +150,7 @@ Node *makeAction(char *text)
   node->action.text= strdup(text);
   node->action.list= actions;
   node->action.rule= thisRule;
+  node->action.linenum= linenum;
   actions= node;
   {
     char *ptr;
@@ -167,11 +168,12 @@ Node *makePredicate(char *text)
   return node;
 }
 
-Node *makeError(Node *e, char *text)
+Node *makeError(Node *e, char *text, Position *linenum)
 {
   Node *node= newNode(Error);
   node->error.element= e;
   node->error.text= strdup(text);
+  node->error.linenum= linenum;
   return node;
 }
 

@@ -18,6 +18,8 @@
 
 #include <stdio.h>
 
+typedef struct POSITION { int line;  int column;    } Position;
+
 enum { Unknown= 0, Rule, Variable, Name, Dot, Character, String, Class, Action, Predicate, Error, Alternate, Sequence, PeekFor, PeekNot, Query, Star, Plus };
 
 enum {
@@ -34,9 +36,9 @@ struct Dot	 { int type;  Node *next;										};
 struct Character { int type;  Node *next;   char *value;								};
 struct String	 { int type;  Node *next;   char *value;								};
 struct Class	 { int type;  Node *next;   unsigned char *value;							};
-struct Action	 { int type;  Node *next;   char *text;	  Node *list;  char *name;  Node *rule;				};
+struct Action	 { int type;  Node *next;   char *text;	  Node *list;  char *name;  Node *rule;  Position *linenum;				};
 struct Predicate { int type;  Node *next;   char *text;									};
-struct Error	 { int type;  Node *next;   Node *element;  char *text;							};
+struct Error	 { int type;  Node *next;   Node *element;  char *text;  Position* linenum;							};
 struct Alternate { int type;  Node *next;   Node *first;  Node *last;							};
 struct Sequence	 { int type;  Node *next;   Node *first;  Node *last;							};
 struct PeekFor	 { int type;  Node *next;   Node *element;								};
@@ -76,6 +78,12 @@ extern Node *start;
 extern int   ruleCount;
 
 extern FILE *output;
+extern char	*fileName;
+extern int	 lineNumber;
+extern char	*fileNameOut;
+extern int	 lineNumberOut;
+
+extern int	 lineFlag;
 
 extern Node *makeRule(char *name);
 extern Node *findRule(char *name);
@@ -88,9 +96,9 @@ extern Node *makeDot(void);
 extern Node *makeCharacter(char *text);
 extern Node *makeString(char *text);
 extern Node *makeClass(char *text);
-extern Node *makeAction(char *text);
+extern Node *makeAction(char *text, Position *linenum);
 extern Node *makePredicate(char *text);
-extern Node *makeError(Node *e, char *text);
+extern Node *makeError(Node *e, char *text, Position *linenum);
 extern Node *makeAlternate(Node *e);
 extern Node *Alternate_append(Node *e, Node *f);
 extern Node *makeSequence(Node *e);
@@ -109,3 +117,13 @@ extern void  Rule_compile_c(Node *node);
 
 extern void  Node_print(Node *node);
 extern void  Rule_print(Node *node);
+
+#ifdef __GNUC__
+extern int   codePrintf(FILE *stream, const char *format, ...)
+    __attribute__ ((format (printf, 2, 3)));
+#else
+extern int   codePrintf(FILE *stream, const char *format, ...);
+#endif
+
+extern void  changeLineNum(Position *n);
+extern void  restoreLineNum();
