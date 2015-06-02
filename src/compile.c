@@ -16,6 +16,7 @@
  * Last edited: 2013-12-18 10:09:42 by piumarta on linux32
  */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,6 +90,41 @@ static int cnext(unsigned char **ccp)
     return c;
 }
 
+int fprintf_inspect(FILE *stream, const char *format, ...)
+{
+    int idx = 0;
+    int written = 0;
+    int size = 0;
+    char *buf = NULL;
+    va_list argptr;
+
+    va_start(argptr, format);
+    do
+    {
+        size = written ? written * 2 : 4096;
+        buf = (char*) realloc(buf, size);
+        written = vsnprintf(buf, size, format, argptr);
+    } while (written >= size);
+    
+    /* count line */
+    for (idx = 0; idx < written; ++idx)
+    {
+        if(buf[idx] == '\n')
+            ++lineNumberOut;
+    }
+
+    /* do actual output */
+    fwrite(buf, 1, written, stream);
+
+    /* clean resource */
+    free(buf);
+    va_end(argptr);
+
+    return written;
+}
+
+#define fprintf fprintf_inspect
+
 static char *makeCharClass(unsigned char *cclass)
 {
   unsigned char	 bits[32];
@@ -138,6 +174,8 @@ static void label(int n)	{ fprintf(output, "\n  l%d:;\t", n); }
 static void jump(int n)		{ fprintf(output, "  goto l%d;", n); }
 static void save(int n)		{ fprintf(output, "  int yypos%d= yy->__pos, yythunkpos%d= yy->__thunkpos;", n, n); }
 static void restore(int n)	{ fprintf(output,     "  yy->__pos= yypos%d; yy->__thunkpos= yythunkpos%d;", n, n); }
+void changeLine(int n)	{ fprintf(output, "#line %d \"%s\"\n", n, fileName); }
+void restoreLine()	{ fprintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
 
 static void Node_compile_c_ko(Node *node, int ko)
 {
@@ -205,7 +243,9 @@ static void Node_compile_c_ko(Node *node, int ko)
 	fprintf(output, "  yyText(yy, yy->__begin, yy->__end);  {\n");
 	fprintf(output, "#define yytext yy->__text\n");
 	fprintf(output, "#define yyleng yy->__textlen\n");
+    changeLine(node->error.linenum);
 	fprintf(output, "  %s;\n", node->error.text);
+    restoreLine();
 	fprintf(output, "#undef yytext\n");
 	fprintf(output, "#undef yyleng\n");
 	fprintf(output, "  }");
@@ -616,9 +656,8 @@ YY_LOCAL(void) yyDone(yycontext *yy)\n\
   for (pos= 0;  pos < yy->__thunkpos;  ++pos)\n\
     {\n\
       yythunk *thunk= &yy->__thunks[pos];\n\
-      int yyleng= thunk->end ? yyText(yy, thunk->begin, thunk->end) : thunk->begin;\n\
+      int yyleng= thunk->end ? yyText(yy, (yy->__begin= thunk->begin), (yy->__end= thunk->end)) : thunk->begin;\n\
       yyprintf((stderr, \"DO [%d] %p %s\\n\", pos, thunk->action, yy->__text));\n\
-      yyLineGet(yy, thunk->begin, lineNumber);\n\
       thunk->action(yy, yy->__text, yyleng);\n\
     }\n\
   yy->__thunkpos= 0;\n\
@@ -808,8 +847,9 @@ void Rule_compile_c(Node *node)
       defineVariables(n->action.rule->rule.variables);
       fprintf(output, "  yyprintf((stderr, \"do yy%s\\n\"));\n", n->action.name);
       fprintf(output, "  {\n");
-      fprintf(output, "#line %d \"%s\"\n", n->action.linenum, fileName);
+      changeLine(n->action.linenum);
       fprintf(output, "  %s;\n", n->action.text);
+      restoreLine();
       fprintf(output, "  }\n");
       undefineVariables(n->action.rule->rule.variables);
       fprintf(output, "}\n");

@@ -36,7 +36,7 @@ struct String	 { int type;  Node *next;   char *value;								};
 struct Class	 { int type;  Node *next;   unsigned char *value;							};
 struct Action	 { int type;  Node *next;   char *text;	  Node *list;  char *name;  Node *rule;  int linenum;				};
 struct Predicate { int type;  Node *next;   char *text;									};
-struct Error	 { int type;  Node *next;   Node *element;  char *text;							};
+struct Error	 { int type;  Node *next;   Node *element;  char *text; int linenum;							};
 struct Alternate { int type;  Node *next;   Node *first;  Node *last;							};
 struct Sequence	 { int type;  Node *next;   Node *first;  Node *last;							};
 struct PeekFor	 { int type;  Node *next;   Node *element;								};
@@ -78,6 +78,8 @@ extern int   ruleCount;
 extern FILE *output;
 extern char	*fileName;
 extern int	 lineNumber;
+extern char	*fileNameOut;
+extern int	 lineNumberOut;
 
 extern Node *makeRule(char *name);
 extern Node *findRule(char *name);
@@ -90,9 +92,9 @@ extern Node *makeDot(void);
 extern Node *makeCharacter(char *text);
 extern Node *makeString(char *text);
 extern Node *makeClass(char *text);
-extern Node *makeAction(char *text);
+extern Node *makeAction(char *text, int linenum);
 extern Node *makePredicate(char *text);
-extern Node *makeError(Node *e, char *text);
+extern Node *makeError(Node *e, char *text, int linenum);
 extern Node *makeAlternate(Node *e);
 extern Node *Alternate_append(Node *e, Node *f);
 extern Node *makeSequence(Node *e);
@@ -111,3 +113,7 @@ extern void  Rule_compile_c(Node *node);
 
 extern void  Node_print(Node *node);
 extern void  Rule_print(Node *node);
+
+extern int   fprintf_inspect(FILE *stream, const char *format, ...);
+extern void  changeLine(int n);
+extern void  restoreLine();
