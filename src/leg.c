@@ -35,7 +35,7 @@
   FILE *input= 0;
 
   int   verboseFlag= 0;
-  int   debugInfo= 1;
+  int   lineFlag= 1;
 
   int	 lineNumber= 0;
   char	*fileName= 0;
@@ -1475,7 +1475,7 @@ int main(int argc, char **argv)
 	  break;
 
 	case 'i':
-	  debugInfo= 0;
+	  lineFlag= 0;
 	  break;
 
 	case 'o':

@@ -81,7 +81,7 @@ extern int	 lineNumber;
 extern char	*fileNameOut;
 extern int	 lineNumberOut;
 
-extern int	 debugInfo;
+extern int	 lineFlag;
 
 extern Node *makeRule(char *name);
 extern Node *findRule(char *name);

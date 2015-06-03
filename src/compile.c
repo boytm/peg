@@ -173,8 +173,8 @@ static void jump(int n)		{ codePrintf(output, "  goto l%d;", n); }
 static void save(int n)		{ codePrintf(output, "  int yypos%d= yy->__pos, yythunkpos%d= yy->__thunkpos;", n, n); }
 static void restore(int n)	{ codePrintf(output,     "  yy->__pos= yypos%d; yy->__thunkpos= yythunkpos%d;", n, n); }
 
-void changeLineNum(int n)	{ if (debugInfo) codePrintf(output, "#line %d \"%s\"\n", n, fileName); }
-void restoreLineNum()	{ if (debugInfo) codePrintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
+void changeLineNum(int n)	{ if (lineFlag) codePrintf(output, "#line %d \"%s\"\n", n, fileName); }
+void restoreLineNum()	{ if (lineFlag) codePrintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
 
 static void Node_compile_c_ko(Node *node, int ko)
 {
