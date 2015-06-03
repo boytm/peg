@@ -47,6 +47,7 @@
   FILE *input= 0;
 
   int   verboseFlag= 0;
+  int   debugInfo= 1;
 
   int	 lineNumber= 0;
   char	*fileName= 0;
@@ -60,38 +61,65 @@
 
   void yyerror(char *message);
 
-#define yyLine(yy, pos) do \
+#define addLine(yy, pos) do \
 { \
   while (yy->linelen <= yy->linepos) \
     { \
       yy->linelen = yy->linelen ? yy->linelen * 2 : 1; \
-      yy->line= (int *)YY_REALLOC(yy, yy->line, sizeof(int) * yy->linelen); \
+      yy->lines= (int *)YY_REALLOC(yy, yy->lines, sizeof(int) * yy->linelen); \
     } \
-  yy->line[yy->linepos++] = pos; \
+  yy->lines[yy->linepos++] = pos; \
 } while(0)
 
-int yyLineGet(int *line, int linepos, int pos)
+int getLine(int *lines, int linepos, int pos)
 { 
-  int linenumber;
-  for(linenumber = 0; linenumber < linepos && pos >= line[linenumber]; ++linenumber) 
-  { 
-  } 
-  return linenumber += 1; 
+  int retval;
+  int from, to;
+  for(from = 0, to = linepos; from < to; )
+    {
+
+      int mid = (from + to) / 2;
+      if(pos < lines[mid])
+        {
+          to = mid - 1;
+        }
+      else if(pos == lines[mid])
+        {
+          retval = mid - 1; /* \n is previous lines */
+          break;
+        }
+      else /* pos > lines[mid] */
+        {
+          from = mid + 1;
+        }
+
+      /* stop conditon */
+      if(from + 1 == to || from == to)
+        {
+          if(pos <= lines[from])
+            retval = from - 1;
+          else if(pos > lines[to])
+            retval = to;
+          else
+            retval = from;
+        }
+    }
+  return retval + 2;
 }
 
 # define YY_INPUT(buf, result, max)		\
   {						\
     int c= getc(input);				\
-    if ('\n' == c || '\r' == c) { ++lineNumber;	yyLine(yy, yy->__pos + 1);} \
+    if ('\n' == c || '\r' == c) { ++lineNumber;	addLine(yy, yy->__pos + 1);} \
     result= (EOF == c) ? 0 : (*(buf)= c, 1);	\
   }
 
-#define LINE yyLineGet(yy->line, yy->linepos, yy->__begin)
+#define LINE getLine(yy->lines, yy->linepos, yy->__begin)
 
 # define YY_LOCAL(T)	static T
 # define YY_RULE(T)	static T
 # define YY_CTX_MEMBERS \
-    int *line; int linepos; int linelen;
+    int *lines; int linepos; int linelen;
 %}
 
 # Hierarchical syntax
@@ -237,6 +265,7 @@ static void usage(char *name)
   fprintf(stderr, "usage: %s [<option>...] [<file>...]\n", name);
   fprintf(stderr, "where <option> can be\n");
   fprintf(stderr, "  -h          print this help information\n");
+  fprintf(stderr, "  -i          do not generate '#line' info (usefull for versioning)\n");
   fprintf(stderr, "  -o <ofile>  write output to <ofile>\n");
   fprintf(stderr, "  -v          be verbose\n");
   fprintf(stderr, "  -V          print version number and exit\n");
@@ -257,7 +286,7 @@ int main(int argc, char **argv)
   lineNumberOut= 0;
   fileName= "<stdout>";
 
-  while (-1 != (c= getopt(argc, argv, "Vho:v")))
+  while (-1 != (c= getopt(argc, argv, "Vhio:v")))
     {
       switch (c)
 	{
@@ -267,6 +296,10 @@ int main(int argc, char **argv)
 
 	case 'h':
 	  usage(basename(argv[0]));
+	  break;
+
+	case 'i':
+	  debugInfo= 0;
 	  break;
 
 	case 'o':
@@ -326,11 +359,11 @@ int main(int argc, char **argv)
   Rule_compile_c_header();
 
   for (; headers;  headers= headers->next)
-{
-    changeLine(headers->linenum);
-    fprintf_inspect(output, "%s\n", headers->text);
-    restoreLine();
-}
+    {
+      changeLine(headers->linenum);
+      fprintf_inspect(output, "%s\n", headers->text);
+      restoreLine();
+    }
 
   if (rules)
     Rule_compile_c(rules);

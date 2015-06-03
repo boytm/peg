@@ -81,6 +81,8 @@ extern int	 lineNumber;
 extern char	*fileNameOut;
 extern int	 lineNumberOut;
 
+extern int	 debugInfo;
+
 extern Node *makeRule(char *name);
 extern Node *findRule(char *name);
 extern Node *beginRule(Node *rule);
@@ -114,6 +116,12 @@ extern void  Rule_compile_c(Node *node);
 extern void  Node_print(Node *node);
 extern void  Rule_print(Node *node);
 
+#ifdef __GNUC__
+extern int   fprintf_inspect(FILE *stream, const char *format, ...)
+    __attribute__ ((format (printf, 2, 3)));
+#else
 extern int   fprintf_inspect(FILE *stream, const char *format, ...);
+#endif
+
 extern void  changeLine(int n);
 extern void  restoreLine();

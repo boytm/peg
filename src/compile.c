@@ -101,7 +101,7 @@ int fprintf_inspect(FILE *stream, const char *format, ...)
     va_start(argptr, format);
     do
     {
-        size = written ? written * 2 : 4096;
+        size = written ? written + size : 4096;
         buf = (char*) realloc(buf, size);
         written = vsnprintf(buf, size, format, argptr);
     } while (written >= size);
@@ -174,8 +174,9 @@ static void label(int n)	{ fprintf(output, "\n  l%d:;\t", n); }
 static void jump(int n)		{ fprintf(output, "  goto l%d;", n); }
 static void save(int n)		{ fprintf(output, "  int yypos%d= yy->__pos, yythunkpos%d= yy->__thunkpos;", n, n); }
 static void restore(int n)	{ fprintf(output,     "  yy->__pos= yypos%d; yy->__thunkpos= yythunkpos%d;", n, n); }
-void changeLine(int n)	{ fprintf(output, "#line %d \"%s\"\n", n, fileName); }
-void restoreLine()	{ fprintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
+
+void changeLine(int n)	{ if (debugInfo) fprintf(output, "#line %d \"%s\"\n", n, fileName); }
+void restoreLine()	{ if (debugInfo) fprintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
 
 static void Node_compile_c_ko(Node *node, int ko)
 {
