@@ -1536,9 +1536,9 @@ int main(int argc, char **argv)
 
   for (; headers;  headers= headers->next)
     {
-      changeLine(headers->linenum);
-      fprintf_inspect(output, "%s\n", headers->text);
-      restoreLine();
+      changeLineNum(headers->linenum);
+      codePrintf(output, "%s\n", headers->text);
+      restoreLineNum();
     }
 
   if (rules)
@@ -1546,9 +1546,9 @@ int main(int argc, char **argv)
 
   if (trailer)
     {
-      changeLine(trailer->linenum);
-      fprintf_inspect(output, "%s\n", trailer->text);
-      restoreLine();
+      changeLineNum(trailer->linenum);
+      codePrintf(output, "%s\n", trailer->text);
+      restoreLineNum();
     }
 
   return 0;
