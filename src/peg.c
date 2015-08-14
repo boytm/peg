@@ -29,21 +29,29 @@
 FILE *input= 0;
 
 int   verboseFlag= 0;
+int   lineFlag= 1;
 
-static int   lineNumber= 0;
-static char *fileName= 0;
+int   lineNumber= 0;
+char *fileName= 0;
+int	  lineNumberOut= 0;
+char *fileNameOut= 0;
+
 
 void yyerror(char *message);
 
 #define YY_INPUT(buf, result, max)			\
 {							\
   int c= getc(input);					\
-  if ('\n' == c || '\r' == c) ++lineNumber;		\
+  if ('\n' == c || '\r' == c) { ++lineNumber;	pushLine(yy, yy->__pos + 1);} \
   result= (EOF == c) ? 0 : (*(buf)= c, 1);		\
 }
 
+#define LINE getPosition(yy->lines, yy->linepos, yy->__begin)
+
 #define YY_LOCAL(T)	static T
 #define YY_RULE(T)	static T
+# define YY_CTX_MEMBERS \
+	int *lines; int linepos; int linelen;
 
 #include "peg.peg-c"
 
@@ -100,6 +108,8 @@ int main(int argc, char **argv)
   input= stdin;
   lineNumber= 1;
   fileName= "<stdin>";
+  lineNumberOut= 1;
+  fileNameOut= "<stdout>";
 
   while (-1 != (c= getopt(argc, argv, "Vho:v")))
     {
@@ -113,12 +123,17 @@ int main(int argc, char **argv)
 	  usage(basename(argv[0]));
 	  break;
 
+	case 'i':
+	  lineFlag= 0;
+	  break;
+
 	case 'o':
 	  if (!(output= fopen(optarg, "w")))
 	    {
 	      perror(optarg);
 	      exit(1);
 	    }
+	  fileNameOut= strdup(optarg);
 	  break;
 
 	case 'v':

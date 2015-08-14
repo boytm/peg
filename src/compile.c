@@ -176,7 +176,7 @@ static void save(int n)		{ codePrintf(output, "  int yypos%d= yy->__pos, yythunk
 static void restore(int n)	{ codePrintf(output,     "  yy->__pos= yypos%d; yy->__thunkpos= yythunkpos%d;", n, n); }
 
 void changeLineNum(Position *n)	{ if (lineFlag) codePrintf(output, "#line %d \"%s\"\n%*s", n->line, fileName, n->column, ""); }
-void restoreLineNum()	{ if (lineFlag) codePrintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
+void restoreLineNum()	{ if (lineFlag) codePrintf(output, "#line %d \"%s\"\n", lineNumberOut + 1, fileNameOut); }
 
 static void Node_compile_c_ko(Node *node, int ko)
 {

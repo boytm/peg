@@ -38,7 +38,7 @@ Primary		<- Identifier !LEFTARROW	{ push(makeName(findRule(yytext))); }
 		 / Literal			{ push(makeString(yytext)); }
 		 / Class			{ push(makeClass(yytext)); }
 		 / DOT				{ push(makeDot()); }
-		 / Action			{ push(makeAction(yytext)); }		#ikp added
+		 / Action			{ push(makeAction(yytext, LINE)); }		#ikp added
 		 / BEGIN			{ push(makePredicate("YY_BEGIN")); }	#ikp added
 		 / END				{ push(makePredicate("YY_END")); }	#ikp added
 

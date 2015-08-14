@@ -127,3 +127,16 @@ extern int   codePrintf(FILE *stream, const char *format, ...);
 
 extern void  changeLineNum(Position *n);
 extern void  restoreLineNum();
+extern Position *newPosition(int line, int column);
+extern Position *getPosition(int *lines, int linelast, int pos);
+
+#define pushLine(yy, pos) do \
+{ \
+  while (yy->linelen <= yy->linepos) \
+    { \
+      yy->linelen = yy->linelen ? yy->linelen * 2 : 1; \
+      yy->lines= (int *)YY_REALLOC(yy, yy->lines, sizeof(int) * yy->linelen); \
+    } \
+  yy->lines[yy->linepos++] = pos; \
+} while(0)
+

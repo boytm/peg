@@ -221,7 +221,7 @@ YY_LOCAL(void) yyDone(yycontext *yy)
   for (pos= 0;  pos < yy->__thunkpos;  ++pos)
     {
       yythunk *thunk= &yy->__thunks[pos];
-      int yyleng= thunk->end ? yyText(yy, thunk->begin, thunk->end) : thunk->begin;
+      int yyleng= thunk->end ? yyText(yy, (yy->__begin= thunk->begin), (yy->__end= thunk->end)) : thunk->begin;
       yyprintf((stderr, "DO [%d] %p %s\n", pos, thunk->action, yy->__text));
       thunk->action(yy, yy->__text, yyleng);
     }
@@ -312,7 +312,9 @@ YY_ACTION(void) yy_7_Primary(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_7_Primary\n"));
   {
-   push(makePredicate("YY_END")); ;
+#line 43 "peg.peg"
+              push(makePredicate("YY_END")); ;
+#line 318 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -325,7 +327,9 @@ YY_ACTION(void) yy_6_Primary(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_6_Primary\n"));
   {
-   push(makePredicate("YY_BEGIN")); ;
+#line 42 "peg.peg"
+               push(makePredicate("YY_BEGIN")); ;
+#line 333 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -338,7 +342,9 @@ YY_ACTION(void) yy_5_Primary(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_5_Primary\n"));
   {
-   push(makeAction(yytext)); ;
+#line 41 "peg.peg"
+                push(makeAction(yytext, LINE)); ;
+#line 348 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -351,7 +357,9 @@ YY_ACTION(void) yy_4_Primary(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_4_Primary\n"));
   {
-   push(makeDot()); ;
+#line 40 "peg.peg"
+              push(makeDot()); ;
+#line 363 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -364,7 +372,9 @@ YY_ACTION(void) yy_3_Primary(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_Primary\n"));
   {
-   push(makeClass(yytext)); ;
+#line 39 "peg.peg"
+               push(makeClass(yytext)); ;
+#line 378 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -377,7 +387,9 @@ YY_ACTION(void) yy_2_Primary(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_Primary\n"));
   {
-   push(makeString(yytext)); ;
+#line 38 "peg.peg"
+                 push(makeString(yytext)); ;
+#line 393 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -390,7 +402,9 @@ YY_ACTION(void) yy_1_Primary(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_Primary\n"));
   {
-   push(makeName(findRule(yytext))); ;
+#line 3 "peg.peg"
+    push(makeName(findRule(yytext))); ;
+#line 408 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -403,7 +417,9 @@ YY_ACTION(void) yy_3_Suffix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_Suffix\n"));
   {
-   push(makePlus (pop())); ;
+#line 5 "peg.peg"
+             push(makePlus (pop())); ;
+#line 423 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -416,7 +432,9 @@ YY_ACTION(void) yy_2_Suffix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_Suffix\n"));
   {
-   push(makeStar (pop())); ;
+#line 3 "peg.peg"
+                                            push(makeStar (pop())); ;
+#line 438 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -429,7 +447,9 @@ YY_ACTION(void) yy_1_Suffix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_Suffix\n"));
   {
+#line 2 "peg.peg"
    push(makeQuery(pop())); ;
+#line 453 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -442,7 +462,9 @@ YY_ACTION(void) yy_3_Prefix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_Prefix\n"));
   {
-   push(makePeekNot(pop())); ;
+#line 6 "peg.peg"
+                             push(makePeekNot(pop())); ;
+#line 468 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -455,7 +477,9 @@ YY_ACTION(void) yy_2_Prefix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_Prefix\n"));
   {
-   push(makePeekFor(pop())); ;
+#line 3 "peg.peg"
+                                                        push(makePeekFor(pop())); ;
+#line 483 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -468,7 +492,9 @@ YY_ACTION(void) yy_1_Prefix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_Prefix\n"));
   {
-   push(makePredicate(yytext)); ;
+#line 1 "peg.peg"
+                          push(makePredicate(yytext)); ;
+#line 498 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -481,7 +507,9 @@ YY_ACTION(void) yy_2_Sequence(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_Sequence\n"));
   {
-   push(makePredicate("1")); ;
+#line 5 "peg.peg"
+                              push(makePredicate("1")); ;
+#line 513 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -494,7 +522,9 @@ YY_ACTION(void) yy_1_Sequence(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_Sequence\n"));
   {
-   Node *f= pop();  push(Sequence_append(pop(), f)); ;
+#line 1 "peg.peg"
+                              Node *f= pop();  push(Sequence_append(pop(), f)); ;
+#line 528 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -507,7 +537,9 @@ YY_ACTION(void) yy_1_Expression(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_Expression\n"));
   {
-   Node *f= pop();  push(Alternate_append(pop(), f)); ;
+#line 3 "peg.peg"
+         Node *f= pop();  push(Alternate_append(pop(), f)); ;
+#line 543 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -520,7 +552,9 @@ YY_ACTION(void) yy_2_Definition(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_Definition\n"));
   {
-   Node *e= pop();  Rule_setExpression(pop(), e); ;
+#line 6 "peg.peg"
+           Node *e= pop();  Rule_setExpression(pop(), e); ;
+#line 558 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos
@@ -533,7 +567,9 @@ YY_ACTION(void) yy_1_Definition(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_Definition\n"));
   {
-   if (push(beginRule(findRule(yytext)))->rule.expression) fprintf(stderr, "rule '%s' redefined\n", yytext); ;
+#line 1 "peg.peg"
+                              if (push(beginRule(findRule(yytext)))->rule.expression) fprintf(stderr, "rule '%s' redefined\n", yytext); ;
+#line 573 "peg.peg-c"
   }
 #undef yythunkpos
 #undef yypos

@@ -262,6 +262,51 @@ Node *makePlus(Node *e)
   return node;
 }
 
+Position *newPosition(int line, int column)
+{
+  Position *pos= calloc(1, sizeof(Position));
+  pos->line = line;
+  pos->column = column;
+  return pos;
+}
+
+Position *getPosition(int *lines, int linelast, int pos)
+{ 
+  int retval;
+  int from, to, mid;
+  for(from = 0, to = linelast; from <= to; )
+    {
+      /* stop conditon */
+      if(from + 1 == to || from == to)
+        {
+          if(pos <= lines[from])
+            retval = from - 1;
+          else if(pos > lines[to])
+            retval = to;
+          else
+            retval = from;
+
+          break;
+        }
+
+      mid = (from + to) / 2;
+      if(pos < lines[mid])
+        {
+          to = mid - 1;
+        }
+      else if(pos == lines[mid])
+        {
+          retval = mid - 1; /* \n is previous line */
+          break;
+        }
+      else /* pos > lines[mid] */
+        {
+          from = mid + 1;
+        }
+    }
+  return newPosition(retval + 2, retval >= 0 ? pos - lines[retval] : pos);
+}
+
 
 static Node  *stack[1024];
 static Node **stackPointer= stack;
