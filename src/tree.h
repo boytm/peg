@@ -130,11 +130,13 @@ extern void  restoreLineNum();
 extern Position *newPosition(int line, int column);
 extern Position *getPosition(int *lines, int linelast, int pos);
 
+#define LINE_SIZE 128
+
 #define pushLine(yy, pos) do \
 { \
   while (yy->linelen <= yy->linepos) \
     { \
-      yy->linelen = yy->linelen ? yy->linelen * 2 : 1; \
+      yy->linelen = yy->linelen ? yy->linelen * 2 : LINE_SIZE; \
       yy->lines= (int *)YY_REALLOC(yy, yy->lines, sizeof(int) * yy->linelen); \
     } \
   yy->lines[yy->linepos++] = pos; \
