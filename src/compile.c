@@ -13,7 +13,7 @@
  * 
  * THE SOFTWARE IS PROVIDED 'AS IS'.  USE ENTIRELY AT YOUR OWN RISK.
  * 
- * Last edited: 2013-12-18 10:09:42 by piumarta on linux32
+ * Last edited: 2016-07-22 09:43:05 by piumarta on zora.local
  */
 
 #include <stdarg.h>
@@ -99,12 +99,15 @@ int codePrintf(FILE *stream, const char *format, ...)
     va_list argptr;
 
     va_start(argptr, format);
-    do
+
+    written = vsnprintf(buf, size, format, argptr);
+    if (written < 0) 
     {
-        size = written ? written + size : 4096;
-        buf = (char*) realloc(buf, size);
-        written = vsnprintf(buf, size, format, argptr);
-    } while (written >= size);
+        return written;
+    }
+    size = written + 1;
+    buf = (char*) realloc(buf, size);
+    written = vsnprintf(buf, size, format, argptr);
     
     /* count line */
     for (idx = 0; idx < written; ++idx)
@@ -173,8 +176,15 @@ static void jump(int n)		{ codePrintf(output, "  goto l%d;", n); }
 static void save(int n)		{ codePrintf(output, "  int yypos%d= yy->__pos, yythunkpos%d= yy->__thunkpos;", n, n); }
 static void restore(int n)	{ codePrintf(output,     "  yy->__pos= yypos%d; yy->__thunkpos= yythunkpos%d;", n, n); }
 
-void changeLineNum(int n)	{ if (lineFlag) codePrintf(output, "#line %d \"%s\"\n", n, fileName); }
-void restoreLineNum()	{ if (lineFlag) codePrintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
+void changeLineNum(int n)	
+{ 
+    if (!nolinesFlag) {
+        int column= 0;
+        int line= getLine(n, &column);
+        codePrintf(output, "#line %d \"%s\"\n%*s", line, fileName, column - 1, "");
+    }
+}
+void restoreLineNum()	{ if (!nolinesFlag) codePrintf(output, "#line %d \"%s\"\n", lineNumberOut + 2, fileNameOut); }
 
 static void Node_compile_c_ko(Node *node, int ko)
 {
@@ -223,6 +233,15 @@ static void Node_compile_c_ko(Node *node, int ko)
       codePrintf(output, "  yyDo(yy, yy%s, yy->__begin, yy->__end);", node->action.name);
       break;
 
+    case Inline:
+      codePrintf(output, "  yyText(yy, yy->__begin, yy->__end);\n");
+      codePrintf(output, "#define yytext yy->__text\n");
+      codePrintf(output, "#define yyleng yy->__textlen\n");
+      codePrintf(output, "%s;\n", node->inLine.text);
+      codePrintf(output, "#undef yytext\n");
+      codePrintf(output, "#undef yyleng\n");
+      break;
+
     case Predicate:
       codePrintf(output, "  yyText(yy, yy->__begin, yy->__end);  {\n");
       codePrintf(output, "#define yytext yy->__text\n");
@@ -242,7 +261,7 @@ static void Node_compile_c_ko(Node *node, int ko)
 	codePrintf(output, "  yyText(yy, yy->__begin, yy->__end);  {\n");
 	codePrintf(output, "#define yytext yy->__text\n");
 	codePrintf(output, "#define yyleng yy->__textlen\n");
-	changeLineNum(node->error.linenum);
+	changeLineNum(node->error.pos);
 	codePrintf(output, "  %s;\n", node->error.text);
 	restoreLineNum();
 	codePrintf(output, "#undef yytext\n");
@@ -794,6 +813,7 @@ int consumesInput(Node *node)
     case String:	return strlen(node->string.value) > 0;
     case Class:		return 1;
     case Action:	return 0;
+    case Inline:	return 0;
     case Predicate:	return 0;
     case Error:		return consumesInput(node->error.element);
 
@@ -846,8 +866,8 @@ void Rule_compile_c(Node *node)
       defineVariables(n->action.rule->rule.variables);
       codePrintf(output, "  yyprintf((stderr, \"do yy%s\\n\"));\n", n->action.name);
       codePrintf(output, "  {\n");
-      changeLineNum(n->action.linenum);
-      codePrintf(output, "  %s;\n", n->action.text);
+      changeLineNum(n->action.pos);
+      codePrintf(output, "%s;\n", n->action.text);
       restoreLineNum();
       codePrintf(output, "  }\n");
       undefineVariables(n->action.rule->rule.variables);

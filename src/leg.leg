@@ -15,7 +15,7 @@
 # 
 # THE SOFTWARE IS PROVIDED 'AS IS'.  USE ENTIRELY AT YOUR OWN RISK.
 # 
-# Last edited: 2013-08-16 00:14:11 by piumarta on emilia
+# Last edited: 2016-07-22 09:45:53 by piumarta on zora.local
 
 %{
 # include "tree.h"
@@ -32,7 +32,7 @@
 
   struct Header {
     char   *text;
-    int     linenum;
+    int     pos;
     Header *next;
   };
 
@@ -40,95 +40,51 @@
 
   struct Trailer {
     char   *text;
-    int     linenum;
+    int     pos;
     Header *next;
   };
 
   FILE *input= 0;
 
   int   verboseFlag= 0;
-  int   lineFlag= 1;
+  int   nolinesFlag= 0;
 
-  int	 lineNumber= 0;
+  static int	 lineNumber= 0;
+  static int	 lineEnd= 0;
+  static int	 headerLine= 0;
+  static int	 actionLine= 0;
+  static int	 actionColumn= 0;
   char	*fileName= 0;
-  int	 lineNumberOut= 0;
   char	*fileNameOut= 0;
-  static Header	*headers= 0;
+  int	 lineNumberOut= 0;
+
+  static Header		*headers= 0;
   static Trailer	*trailer= 0;
 
-  void makeHeader(char *text, int linenum);
-  void makeTrailer(char *text, int linenum);
+
+  void makeHeader(int pos, char *text);
+  void makeTrailer(int pos, char *text);
 
   void yyerror(char *message);
 
-#define addLine(yy, pos) do \
-{ \
-  while (yy->linelen <= yy->linepos) \
-    { \
-      yy->linelen = yy->linelen ? yy->linelen * 2 : 1; \
-      yy->lines= (int *)YY_REALLOC(yy, yy->lines, sizeof(int) * yy->linelen); \
-    } \
-  yy->lines[yy->linepos++] = pos; \
-} while(0)
-
-int getLine(int *lines, int linepos, int pos)
-{ 
-  int retval;
-  int from, to;
-  for(from = 0, to = linepos; from < to; )
-    {
-
-      int mid = (from + to) / 2;
-      if(pos < lines[mid])
-        {
-          to = mid - 1;
-        }
-      else if(pos == lines[mid])
-        {
-          retval = mid - 1; /* \n is previous lines */
-          break;
-        }
-      else /* pos > lines[mid] */
-        {
-          from = mid + 1;
-        }
-
-      /* stop conditon */
-      if(from + 1 == to || from == to)
-        {
-          if(pos <= lines[from])
-            retval = from - 1;
-          else if(pos > lines[to])
-            retval = to;
-          else
-            retval = from;
-        }
-    }
-  return retval + 2;
-}
-
-# define YY_INPUT(buf, result, max)		\
-  {						\
-    int c= getc(input);				\
-    if ('\n' == c || '\r' == c) { ++lineNumber;	addLine(yy, yy->__pos + 1);} \
-    result= (EOF == c) ? 0 : (*(buf)= c, 1);	\
+# define YY_INPUT(buf, result, max)			\
+  {							\
+    int c= getc(input);					\
+    countChar(c);                       \
+    result= (EOF == c) ? 0 : (*(buf)= c, 1);		\
   }
-
-#define LINE getLine(yy->lines, yy->linepos, yy->__begin)
 
 # define YY_LOCAL(T)	static T
 # define YY_RULE(T)	static T
-# define YY_CTX_MEMBERS \
-    int *lines; int linepos; int linelen;
 %}
 
 # Hierarchical syntax
 
 grammar=	- ( declaration | definition )+ trailer? end-of-file
 
-declaration=	'%{' < ( !'%}' . )* > RPERCENT		{ makeHeader(yytext, LINE); }						#{YYACCEPT}
+declaration=	'%{' < ( !'%}' . )* > RPERCENT		{ makeHeader(yy->__begin, yytext); }						#{YYACCEPT}
 
-trailer=	'%%' < .* >				{ makeTrailer(yytext, LINE); }					#{YYACCEPT}
+trailer=	'%%' < .* >				{ makeTrailer(yy->__begin, yytext); }					#{YYACCEPT}
 
 definition=	identifier 				{ if (push(beginRule(findRule(yytext)))->rule.expression)
 							    fprintf(stderr, "rule '%s' redefined\n", yytext); }
@@ -141,10 +97,11 @@ expression=	sequence (BAR sequence			{ Node *f= pop();  push(Alternate_append(po
 sequence=	error   (error				{ Node *f= pop();  push(Sequence_append(pop(), f)); }
 			)*
 
-error=		prefix  (TILDE action			{ push(makeError(pop(), yytext, LINE)); }
+error=		prefix  (TILDE action			{ push(makeError(yy->__begin, pop(), yytext)); }
 			)?
 
-prefix=		AND action				{ push(makePredicate(yytext)); }
+prefix=		AT  action				{ push(makeInline(yytext)); }
+|		AND action				{ push(makePredicate(yytext)); }
 |		AND suffix				{ push(makePeekFor(pop())); }
 |		NOT suffix				{ push(makePeekNot(pop())); }
 |		    suffix
@@ -161,7 +118,7 @@ primary=	identifier				{ push(makeVariable(yytext)); }
 |		literal					{ push(makeString(yytext)); }
 |		class					{ push(makeClass(yytext)); }
 |		DOT					{ push(makeDot()); }
-|		action					{ push(makeAction(yytext, LINE)); }
+|		action					{ push(makeAction(yy->__begin, yytext)); }
 |		BEGIN					{ push(makePredicate("YY_BEGIN")); }
 |		END					{ push(makePredicate("YY_END")); }
 
@@ -194,6 +151,7 @@ SEMICOLON=	';' -
 BAR=		'|' -
 AND=		'&' -
 NOT=		'!' -
+AT=		'@' -
 QUESTION=	'?' -
 STAR=		'*' -
 PLUS=		'+' -
@@ -238,20 +196,20 @@ void yyerror(char *message)
   exit(1);
 }
 
-void makeHeader(char *text, int linenum)
+void makeHeader(int pos, char *text)
 {
   Header *header= (Header *)malloc(sizeof(Header));
+  header->pos= pos;
   header->text= strdup(text);
-  header->linenum= linenum;
   header->next= headers;
   headers= header;
 }
 
-void makeTrailer(char *text, int linenum)
+void makeTrailer(int pos, char *text)
 {
   trailer= (Trailer *)malloc(sizeof(Trailer));
   trailer->text= strdup(text);
-  trailer->linenum= linenum;
+  trailer->pos= pos;
 }
 
 static void version(char *name)
@@ -265,8 +223,8 @@ static void usage(char *name)
   fprintf(stderr, "usage: %s [<option>...] [<file>...]\n", name);
   fprintf(stderr, "where <option> can be\n");
   fprintf(stderr, "  -h          print this help information\n");
-  fprintf(stderr, "  -i          do not generate '#line' info (usefull for versioning)\n");
   fprintf(stderr, "  -o <ofile>  write output to <ofile>\n");
+  fprintf(stderr, "  -P          do not generate #line directives\n");
   fprintf(stderr, "  -v          be verbose\n");
   fprintf(stderr, "  -V          print version number and exit\n");
   fprintf(stderr, "if no <file> is given, input is read from stdin\n");
@@ -284,9 +242,9 @@ int main(int argc, char **argv)
   lineNumber= 1;
   fileName= "<stdin>";
   lineNumberOut= 0;
-  fileName= "<stdout>";
+  fileNameOut= "<stdout>";
 
-  while (-1 != (c= getopt(argc, argv, "Vhio:v")))
+  while (-1 != (c= getopt(argc, argv, "PVho:v")))
     {
       switch (c)
 	{
@@ -298,19 +256,18 @@ int main(int argc, char **argv)
 	  usage(basename(argv[0]));
 	  break;
 
-	case 'i':
-	  lineFlag= 0;
-	  break;
-
 	case 'o':
 	  if (!(output= fopen(optarg, "w")))
 	    {
 	      perror(optarg);
 	      exit(1);
 	    }
-      fileNameOut= strdup(optarg);
+	  fileNameOut= strdup(optarg);
 	  break;
 
+	case 'P':
+	  nolinesFlag= 1;
+	  break;
 	case 'v':
 	  verboseFlag= 1;
 	  break;
@@ -360,7 +317,7 @@ int main(int argc, char **argv)
 
   for (; headers;  headers= headers->next)
     {
-      changeLineNum(headers->linenum);
+      changeLineNum(headers->pos);
       codePrintf(output, "%s\n", headers->text);
       restoreLineNum();
     }
@@ -370,7 +327,7 @@ int main(int argc, char **argv)
 
   if (trailer)
     {
-      changeLineNum(trailer->linenum);
+      changeLineNum(trailer->pos);
       codePrintf(output, "%s\n", trailer->text);
       restoreLineNum();
     }
